@@ -1,0 +1,22 @@
+[Unit]
+Description=IMAP Sync Migration Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=imap-sync
+Group=imap-sync
+WorkingDirectory=/opt/imap-sync-service
+EnvironmentFile=/opt/imap-sync-service/.env
+ExecStart=/usr/bin/python3 /opt/imap-sync-service/app.py
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/imap-sync-service
+
+[Install]
+WantedBy=multi-user.target

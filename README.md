@@ -4,6 +4,8 @@ Small self-hosted HTTP service for mailbox migrations between two IMAP servers.
 
 This service does not implement IMAP copying itself. It schedules and runs [`imapsync`](https://imapsync.lamiral.info/) jobs, stores job state in SQLite, and exposes simple endpoints for creating migrations, checking status, and reading logs.
 
+The service forces `imapsync` to run with `--nolog` because job output is already captured into per-job log files under the service data directory.
+
 ## Why this design
 
 `imapsync` is the pragmatic engine for this job. It already handles folder discovery, message flags, retries, duplicates, and the many IMAP compatibility issues that make direct reimplementation expensive and fragile.

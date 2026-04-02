@@ -131,6 +131,7 @@ def respond_file(handler: BaseHTTPRequestHandler, file_path: Path) -> None:
 def build_imapsync_command(job: sqlite3.Row, secrets_row: sqlite3.Row) -> list[str]:
     args = [
         IMAPSYNC_BIN,
+        "--nolog",
         "--host1",
         job["source_host"],
         "--user1",

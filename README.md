@@ -120,11 +120,14 @@ bash /opt/imap-sync-service/install-debian-lxc.sh
 
 The install script will:
 
-- install `python3` and `imapsync`
+- install `python3`
+- verify that `imapsync` is already installed and available in `PATH`
 - create the `imap-sync` service account
 - create `/var/lib/imap-sync-service`
 - copy the systemd unit
 - create `/opt/imap-sync-service/.env` if it does not already exist
+
+If `imapsync` is not in the Debian repo you are using, install it manually first and then run the script.
 
 After that, edit `/opt/imap-sync-service/.env` and set a strong token:
 

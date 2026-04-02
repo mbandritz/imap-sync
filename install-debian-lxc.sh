@@ -18,7 +18,13 @@ ENV_TARGET="${APP_DIR}/.env"
 export DEBIAN_FRONTEND=noninteractive
 
 apt update
-apt install -y python3 imapsync ca-certificates
+apt install -y python3 ca-certificates
+
+if ! command -v imapsync >/dev/null 2>&1; then
+  echo "imapsync is not installed or not in PATH."
+  echo "Install it manually first, then rerun this script."
+  exit 1
+fi
 
 if ! getent group "${SERVICE_GROUP}" >/dev/null; then
   groupadd --system "${SERVICE_GROUP}"

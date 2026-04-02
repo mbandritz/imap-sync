@@ -87,7 +87,60 @@ curl \
 - `POST /jobs`
 - `POST /jobs/{id}/stop`
 
-## systemd setup
+## Proxmox LXC deployment
+
+For this project, an unprivileged Debian LXC on Proxmox is a good default:
+
+- low overhead
+- easy snapshots and backups
+- systemd works normally
+- this service does not need special kernel features
+
+Recommended container settings:
+
+- Debian 12
+- Unprivileged container
+- 1 vCPU minimum
+- 512 MB RAM minimum
+- 4-8 GB disk minimum
+- Static IP or DHCP reservation
+
+If you want the simplest possible isolation model, a VM also works, but it is usually unnecessary for this workload.
+
+### Automated install on Debian LXC
+
+From inside the container:
+
+```bash
+apt update
+apt install -y git
+git clone https://github.com/mbandritz/imap-sync.git /opt/imap-sync-service
+bash /opt/imap-sync-service/install-debian-lxc.sh
+```
+
+The install script will:
+
+- install `python3` and `imapsync`
+- create the `imap-sync` service account
+- create `/var/lib/imap-sync-service`
+- copy the systemd unit
+- create `/opt/imap-sync-service/.env` if it does not already exist
+
+After that, edit `/opt/imap-sync-service/.env` and set a strong token:
+
+```bash
+nano /opt/imap-sync-service/.env
+```
+
+Then start the service:
+
+```bash
+systemctl restart imap-sync.service
+systemctl enable imap-sync.service
+systemctl status imap-sync.service
+```
+
+### Manual systemd setup
 
 1. Copy the project to your server, for example `/opt/imap-sync-service`.
 2. Create an environment file from `.env.example`.
@@ -107,3 +160,4 @@ sudo systemctl status imap-sync.service
 - Put the service behind HTTPS, either with a reverse proxy or a private network.
 - Use a strong `IMAP_SYNC_API_TOKEN`.
 - Consider binding to `127.0.0.1` and exposing it only through Nginx or Tailscale.
+- In Proxmox, prefer an unprivileged LXC and do not expose the API directly to the public internet.

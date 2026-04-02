@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IMAP Sync Dashboard</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <main class="layout">
+    <section class="hero">
+      <p class="eyebrow">IMAP Sync Service</p>
+      <h1>Queue inbox migrations without hand-writing curl calls.</h1>
+      <p class="lede">Set the shared source and destination server details once, paste a batch of inbox credentials, and submit the whole migration set in one action.</p>
+    </section>
+
+    <section class="panel auth-panel">
+      <div>
+        <h2>API Token</h2>
+        <p>Stored in your browser only. Leave blank if the service has auth disabled.</p>
+      </div>
+      <label>
+        <span>Bearer token</span>
+        <input id="api-token" type="password" autocomplete="off" placeholder="IMAP_SYNC_API_TOKEN">
+      </label>
+      <button id="save-token" class="secondary">Save token</button>
+    </section>
+
+    <section class="panel form-panel">
+      <div class="panel-header">
+        <h2>Bulk Migration Builder</h2>
+        <p>One line per inbox: <code>source_user,source_password,destination_user,destination_password</code></p>
+      </div>
+
+      <div class="grid two">
+        <label>
+          <span>Source host</span>
+          <input id="source-host" value="" placeholder="old.mail.example.com">
+        </label>
+        <label>
+          <span>Source port</span>
+          <input id="source-port" type="number" value="993">
+        </label>
+        <label>
+          <span>Destination host</span>
+          <input id="destination-host" value="" placeholder="new.mail.example.com">
+        </label>
+        <label>
+          <span>Destination port</span>
+          <input id="destination-port" type="number" value="993">
+        </label>
+      </div>
+
+      <div class="grid two">
+        <label class="checkbox">
+          <input id="automap" type="checkbox" checked>
+          <span>Use imapsync automap</span>
+        </label>
+        <label class="checkbox">
+          <input id="sync-internal-dates" type="checkbox" checked>
+          <span>Preserve internal dates</span>
+        </label>
+        <label class="checkbox">
+          <input id="delete2duplicates" type="checkbox">
+          <span>Delete duplicates on destination</span>
+        </label>
+      </div>
+
+      <label>
+        <span>Extra imapsync args</span>
+        <input id="extra-args" placeholder="--ssl1 --ssl2">
+      </label>
+
+      <label>
+        <span>Inbox list</span>
+        <textarea id="bulk-lines" rows="12" placeholder="alice@example.com,oldpass,alice@example.com,newpass&#10;bob@example.com,oldpass2,bob@example.com,newpass2"></textarea>
+      </label>
+
+      <div class="actions">
+        <button id="preview-button" class="secondary">Preview jobs</button>
+        <button id="submit-button">Queue jobs</button>
+      </div>
+    </section>
+
+    <section class="panel preview-panel">
+      <div class="panel-header">
+        <h2>Preview</h2>
+        <p id="preview-summary">No jobs parsed yet.</p>
+      </div>
+      <pre id="preview-output">[]</pre>
+    </section>
+
+    <section class="panel jobs-panel">
+      <div class="panel-header">
+        <h2>Recent Jobs</h2>
+        <div class="actions">
+          <button id="refresh-jobs" class="secondary">Refresh</button>
+        </div>
+      </div>
+      <div id="jobs-output" class="jobs-empty">No jobs loaded yet.</div>
+    </section>
+
+    <section class="panel activity-panel">
+      <div class="panel-header">
+        <h2>Activity</h2>
+      </div>
+      <pre id="activity-output">Waiting for action.</pre>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import json
+import mimetypes
 import os
 import secrets
 import shlex
@@ -18,8 +19,9 @@ from urllib.parse import urlparse
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = Path(os.environ.get("IMAP_SYNC_DATA_DIR", BASE_DIR / "data"))
 DB_PATH = Path(os.environ.get("IMAP_SYNC_DB", DATA_DIR / "jobs.db"))
+STATIC_DIR = BASE_DIR / "static"
 HOST = os.environ.get("IMAP_SYNC_HOST", "0.0.0.0")
-PORT = int(os.environ.get("IMAP_SYNC_PORT", "8080"))
+PORT = int(os.environ.get("IMAP_SYNC_PORT", "8090"))
 API_TOKEN = os.environ.get("IMAP_SYNC_API_TOKEN", "")
 IMAPSYNC_BIN = os.environ.get("IMAPSYNC_BIN", "imapsync")
 POLL_INTERVAL = float(os.environ.get("IMAP_SYNC_POLL_INTERVAL", "2.0"))
@@ -110,6 +112,20 @@ def respond_json(handler: BaseHTTPRequestHandler, status: HTTPStatus, payload: A
     handler.send_header("Content-Length", str(len(body)))
     handler.end_headers()
     handler.wfile.write(body)
+
+
+def respond_file(handler: BaseHTTPRequestHandler, file_path: Path) -> None:
+    if not file_path.exists() or not file_path.is_file():
+        respond_json(handler, HTTPStatus.NOT_FOUND, {"error": "not found"})
+        return
+
+    content = file_path.read_bytes()
+    content_type, _encoding = mimetypes.guess_type(str(file_path))
+    handler.send_response(HTTPStatus.OK)
+    handler.send_header("Content-Type", content_type or "application/octet-stream")
+    handler.send_header("Content-Length", str(len(content)))
+    handler.end_headers()
+    handler.wfile.write(content)
 
 
 def build_imapsync_command(job: sqlite3.Row, secrets_row: sqlite3.Row) -> list[str]:
@@ -214,6 +230,18 @@ def create_job(payload: dict[str, Any]) -> str:
         )
         conn.commit()
     return job_id
+
+
+def create_bulk_jobs(payload: dict[str, Any]) -> list[str]:
+    jobs = payload.get("jobs")
+    if not isinstance(jobs, list) or not jobs:
+        raise ValueError("jobs must be a non-empty list")
+    job_ids: list[str] = []
+    for job in jobs:
+        if not isinstance(job, dict):
+            raise ValueError("each job must be an object")
+        job_ids.append(create_job(job))
+    return job_ids
 
 
 def fetch_job(job_id: str) -> dict[str, Any] | None:
@@ -324,11 +352,24 @@ class Handler(BaseHTTPRequestHandler):
     server_version = "IMAPSyncService/0.1"
 
     def do_GET(self) -> None:
-        if not require_auth(self):
-            return
-
         parsed = urlparse(self.path)
         parts = [part for part in parsed.path.split("/") if part]
+
+        if parsed.path == "/":
+            respond_file(self, STATIC_DIR / "index.html")
+            return
+
+        if parts and parts[0] == "static":
+            requested = Path(*parts[1:]) if len(parts) > 1 else Path("")
+            file_path = (STATIC_DIR / requested).resolve()
+            if STATIC_DIR.resolve() not in file_path.parents and file_path != STATIC_DIR.resolve():
+                respond_json(self, HTTPStatus.NOT_FOUND, {"error": "not found"})
+                return
+            respond_file(self, file_path)
+            return
+
+        if not require_auth(self):
+            return
 
         if parsed.path == "/health":
             respond_json(self, HTTPStatus.OK, {"status": "ok"})
@@ -376,6 +417,19 @@ class Handler(BaseHTTPRequestHandler):
                 respond_json(self, HTTPStatus.BAD_REQUEST, {"error": str(exc)})
                 return
             respond_json(self, HTTPStatus.CREATED, {"id": job_id, "status": "queued"})
+            return
+
+        if parsed.path == "/jobs/bulk":
+            try:
+                payload = read_json(self)
+                job_ids = create_bulk_jobs(payload)
+            except json.JSONDecodeError:
+                respond_json(self, HTTPStatus.BAD_REQUEST, {"error": "invalid json"})
+                return
+            except ValueError as exc:
+                respond_json(self, HTTPStatus.BAD_REQUEST, {"error": str(exc)})
+                return
+            respond_json(self, HTTPStatus.CREATED, {"ids": job_ids, "count": len(job_ids), "status": "queued"})
             return
 
         if len(parts) == 3 and parts[0] == "jobs" and parts[2] == "stop":

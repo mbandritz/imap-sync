@@ -11,6 +11,7 @@ This service does not implement IMAP copying itself. It schedules and runs [`ima
 ## Features
 
 - Token-protected HTTP API
+- Built-in web dashboard for bulk job creation
 - Background job execution
 - SQLite job persistence
 - Per-job logs on disk
@@ -46,6 +47,12 @@ Environment variables:
 ```bash
 export IMAP_SYNC_API_TOKEN='replace-this'
 python3 app.py
+```
+
+Dashboard:
+
+```bash
+open http://127.0.0.1:8080/
 ```
 
 Health check:
@@ -85,7 +92,23 @@ curl \
 - `GET /jobs/{id}`
 - `GET /jobs/{id}/log`
 - `POST /jobs`
+- `POST /jobs/bulk`
 - `POST /jobs/{id}/stop`
+
+## Bulk dashboard workflow
+
+Open `/` in your browser and use the built-in dashboard:
+
+- enter the API token once
+- set the shared source and destination server values
+- paste inbox rows in this format:
+
+```text
+source_user,source_password,destination_user,destination_password
+```
+
+- preview the generated jobs
+- queue the batch with one click
 
 ## Proxmox LXC deployment
 

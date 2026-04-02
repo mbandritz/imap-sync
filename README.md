@@ -140,6 +140,33 @@ systemctl enable imap-sync.service
 systemctl status imap-sync.service
 ```
 
+### Nginx reverse proxy
+
+Keep the app bound to `127.0.0.1` and expose Nginx instead.
+
+Install Nginx:
+
+```bash
+apt install -y nginx
+```
+
+Copy the included config:
+
+```bash
+cp /opt/imap-sync-service/nginx-imap-sync.conf /etc/nginx/sites-available/imap-sync
+ln -s /etc/nginx/sites-available/imap-sync /etc/nginx/sites-enabled/imap-sync
+rm -f /etc/nginx/sites-enabled/default
+```
+
+Edit the `server_name` in `/etc/nginx/sites-available/imap-sync`, then test and reload:
+
+```bash
+nginx -t
+systemctl reload nginx
+```
+
+If you want HTTPS, terminate TLS in Nginx with Let's Encrypt or keep the container reachable only over your VPN or private network.
+
 ### Manual systemd setup
 
 1. Copy the project to your server, for example `/opt/imap-sync-service`.
